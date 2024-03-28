@@ -1,0 +1,25 @@
+type Query {
+    jobs: [Job!]
+    companies: [Company!]
+    job(id: ID!): Job
+    company(id: ID!): Company
+}
+
+"""
+Represents a job ad posted to our board
+"""
+type Job {
+    id: ID!
+    """The __date__ when the job was published, in ISO-8601 format. E.g. `2022-12-32`"""
+    date: String!
+    title: String!
+    description: String
+    company: Company!
+}
+
+type Company {
+    id: ID!
+    name: String!
+    description: String
+    jobs: [Job!]!
+}
