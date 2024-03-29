@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"time"
 )
@@ -17,7 +18,9 @@ func NewClaim(userId, email string) (jwt.Token, error) {
 }
 
 func SignClaimToken(claim jwt.Token) ([]byte, error) {
-	signedClaim, err := jwt.Sign(claim, jwt.WithKey(jwa.HS256, secret))
+
+	v, err := jwk.FromRaw([]byte(secret))
+	signedClaim, err := jwt.Sign(claim, jwt.WithKey(jwa.HS256, v))
 	if err != nil {
 		return nil, err
 	}

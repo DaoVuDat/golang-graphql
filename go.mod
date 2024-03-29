@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/99designs/gqlgen v0.17.45
+	github.com/dgryski/trifles v0.0.0-20200323201526-dd97f9abfb48
 	github.com/go-jet/jet/v2 v2.11.1
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/lestrrat-go/jwx/v2 v2.0.21

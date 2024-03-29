@@ -14,7 +14,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/DaoVuDat/graphql/.gen/model"
+	model1 "github.com/DaoVuDat/graphql/.gen/model"
+	"github.com/DaoVuDat/graphql/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -41,6 +42,7 @@ type Config struct {
 type ResolverRoot interface {
 	Company() CompanyResolver
 	Job() JobResolver
+	Mutation() MutationResolver
 	Query() QueryResolver
 }
 
@@ -63,6 +65,10 @@ type ComplexityRoot struct {
 		Title       func(childComplexity int) int
 	}
 
+	Mutation struct {
+		CreateJob func(childComplexity int, input model.CreateJobInput) int
+	}
+
 	Query struct {
 		Companies func(childComplexity int) int
 		Company   func(childComplexity int, id string) int
@@ -72,18 +78,21 @@ type ComplexityRoot struct {
 }
 
 type CompanyResolver interface {
-	Jobs(ctx context.Context, obj *model.Company) ([]*model.Job, error)
+	Jobs(ctx context.Context, obj *model1.Company) ([]*model1.Job, error)
 }
 type JobResolver interface {
-	Date(ctx context.Context, obj *model.Job) (string, error)
+	Date(ctx context.Context, obj *model1.Job) (string, error)
 
-	Company(ctx context.Context, obj *model.Job) (*model.Company, error)
+	Company(ctx context.Context, obj *model1.Job) (*model1.Company, error)
+}
+type MutationResolver interface {
+	CreateJob(ctx context.Context, input model.CreateJobInput) (*model1.Job, error)
 }
 type QueryResolver interface {
-	Jobs(ctx context.Context) ([]*model.Job, error)
-	Companies(ctx context.Context) ([]*model.Company, error)
-	Job(ctx context.Context, id string) (*model.Job, error)
-	Company(ctx context.Context, id string) (*model.Company, error)
+	Jobs(ctx context.Context) ([]*model1.Job, error)
+	Companies(ctx context.Context) ([]*model1.Company, error)
+	Job(ctx context.Context, id string) (*model1.Job, error)
+	Company(ctx context.Context, id string) (*model1.Company, error)
 }
 
 type executableSchema struct {
@@ -168,6 +177,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Job.Title(childComplexity), true
 
+	case "Mutation.createJob":
+		if e.complexity.Mutation.CreateJob == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createJob_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateJob(childComplexity, args["input"].(model.CreateJobInput)), true
+
 	case "Query.companies":
 		if e.complexity.Query.Companies == nil {
 			break
@@ -213,7 +234,9 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
-	inputUnmarshalMap := graphql.BuildUnmarshalerMap()
+	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputCreateJobInput,
+	)
 	first := true
 
 	switch rc.Operation.Operation {
@@ -246,6 +269,21 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 
 			return &response
+		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
+			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
 		}
 
 	default:
@@ -313,6 +351,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createJob_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CreateJobInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCreateJobInput2githubᚗcomᚋDaoVuDatᚋgraphqlᚋgraphᚋmodelᚐCreateJobInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -397,7 +450,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Company_id(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+func (ec *executionContext) _Company_id(ctx context.Context, field graphql.CollectedField, obj *model1.Company) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Company_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -441,7 +494,7 @@ func (ec *executionContext) fieldContext_Company_id(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Company_name(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+func (ec *executionContext) _Company_name(ctx context.Context, field graphql.CollectedField, obj *model1.Company) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Company_name(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -485,7 +538,7 @@ func (ec *executionContext) fieldContext_Company_name(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Company_description(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+func (ec *executionContext) _Company_description(ctx context.Context, field graphql.CollectedField, obj *model1.Company) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Company_description(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -526,7 +579,7 @@ func (ec *executionContext) fieldContext_Company_description(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Company_jobs(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+func (ec *executionContext) _Company_jobs(ctx context.Context, field graphql.CollectedField, obj *model1.Company) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Company_jobs(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -552,7 +605,7 @@ func (ec *executionContext) _Company_jobs(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Job)
+	res := resTmp.([]*model1.Job)
 	fc.Result = res
 	return ec.marshalNJob2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJobᚄ(ctx, field.Selections, res)
 }
@@ -582,7 +635,7 @@ func (ec *executionContext) fieldContext_Company_jobs(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_id(ctx context.Context, field graphql.CollectedField, obj *model.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_id(ctx context.Context, field graphql.CollectedField, obj *model1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -626,7 +679,7 @@ func (ec *executionContext) fieldContext_Job_id(ctx context.Context, field graph
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_date(ctx context.Context, field graphql.CollectedField, obj *model.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_date(ctx context.Context, field graphql.CollectedField, obj *model1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_date(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -670,7 +723,7 @@ func (ec *executionContext) fieldContext_Job_date(ctx context.Context, field gra
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_title(ctx context.Context, field graphql.CollectedField, obj *model.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_title(ctx context.Context, field graphql.CollectedField, obj *model1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_title(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -714,7 +767,7 @@ func (ec *executionContext) fieldContext_Job_title(ctx context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_description(ctx context.Context, field graphql.CollectedField, obj *model.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_description(ctx context.Context, field graphql.CollectedField, obj *model1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_description(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -755,7 +808,7 @@ func (ec *executionContext) fieldContext_Job_description(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_company(ctx context.Context, field graphql.CollectedField, obj *model.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_company(ctx context.Context, field graphql.CollectedField, obj *model1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_company(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -781,7 +834,7 @@ func (ec *executionContext) _Job_company(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Company)
+	res := resTmp.(*model1.Company)
 	fc.Result = res
 	return ec.marshalNCompany2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompany(ctx, field.Selections, res)
 }
@@ -809,6 +862,70 @@ func (ec *executionContext) fieldContext_Job_company(ctx context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createJob(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateJob(rctx, fc.Args["input"].(model.CreateJobInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model1.Job)
+	fc.Result = res
+	return ec.marshalOJob2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Job_id(ctx, field)
+			case "date":
+				return ec.fieldContext_Job_date(ctx, field)
+			case "title":
+				return ec.fieldContext_Job_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Job_description(ctx, field)
+			case "company":
+				return ec.fieldContext_Job_company(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Job", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_jobs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_jobs(ctx, field)
 	if err != nil {
@@ -832,7 +949,7 @@ func (ec *executionContext) _Query_jobs(ctx context.Context, field graphql.Colle
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Job)
+	res := resTmp.([]*model1.Job)
 	fc.Result = res
 	return ec.marshalOJob2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJobᚄ(ctx, field.Selections, res)
 }
@@ -885,7 +1002,7 @@ func (ec *executionContext) _Query_companies(ctx context.Context, field graphql.
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Company)
+	res := resTmp.([]*model1.Company)
 	fc.Result = res
 	return ec.marshalOCompany2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompanyᚄ(ctx, field.Selections, res)
 }
@@ -936,7 +1053,7 @@ func (ec *executionContext) _Query_job(ctx context.Context, field graphql.Collec
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.Job)
+	res := resTmp.(*model1.Job)
 	fc.Result = res
 	return ec.marshalOJob2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJob(ctx, field.Selections, res)
 }
@@ -1000,7 +1117,7 @@ func (ec *executionContext) _Query_company(ctx context.Context, field graphql.Co
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.Company)
+	res := resTmp.(*model1.Company)
 	fc.Result = res
 	return ec.marshalOCompany2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompany(ctx, field.Selections, res)
 }
@@ -2941,6 +3058,40 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCreateJobInput(ctx context.Context, obj interface{}) (model.CreateJobInput, error) {
+	var it model.CreateJobInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -2951,7 +3102,7 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 var companyImplementors = []string{"Company"}
 
-func (ec *executionContext) _Company(ctx context.Context, sel ast.SelectionSet, obj *model.Company) graphql.Marshaler {
+func (ec *executionContext) _Company(ctx context.Context, sel ast.SelectionSet, obj *model1.Company) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, companyImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -3033,7 +3184,7 @@ func (ec *executionContext) _Company(ctx context.Context, sel ast.SelectionSet, 
 
 var jobImplementors = []string{"Job"}
 
-func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj *model.Job) graphql.Marshaler {
+func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj *model1.Job) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, jobImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -3126,6 +3277,52 @@ func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mutationImplementors = []string{"Mutation"}
+
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mutationImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Mutation",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		innerCtx := graphql.WithRootFieldContext(ctx, &graphql.RootFieldContext{
+			Object: field.Name,
+			Field:  field,
+		})
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Mutation")
+		case "createJob":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createJob(ctx, field)
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3616,11 +3813,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNCompany2githubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompany(ctx context.Context, sel ast.SelectionSet, v model.Company) graphql.Marshaler {
+func (ec *executionContext) marshalNCompany2githubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompany(ctx context.Context, sel ast.SelectionSet, v model1.Company) graphql.Marshaler {
 	return ec._Company(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNCompany2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompany(ctx context.Context, sel ast.SelectionSet, v *model.Company) graphql.Marshaler {
+func (ec *executionContext) marshalNCompany2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompany(ctx context.Context, sel ast.SelectionSet, v *model1.Company) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3628,6 +3825,11 @@ func (ec *executionContext) marshalNCompany2ᚖgithubᚗcomᚋDaoVuDatᚋgraphql
 		return graphql.Null
 	}
 	return ec._Company(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateJobInput2githubᚗcomᚋDaoVuDatᚋgraphqlᚋgraphᚋmodelᚐCreateJobInput(ctx context.Context, v interface{}) (model.CreateJobInput, error) {
+	res, err := ec.unmarshalInputCreateJobInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
@@ -3645,7 +3847,7 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) marshalNJob2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJobᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Job) graphql.Marshaler {
+func (ec *executionContext) marshalNJob2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJobᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.Job) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3689,7 +3891,7 @@ func (ec *executionContext) marshalNJob2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphql�
 	return ret
 }
 
-func (ec *executionContext) marshalNJob2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJob(ctx context.Context, sel ast.SelectionSet, v *model.Job) graphql.Marshaler {
+func (ec *executionContext) marshalNJob2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJob(ctx context.Context, sel ast.SelectionSet, v *model1.Job) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3993,7 +4195,7 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalOCompany2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompanyᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Company) graphql.Marshaler {
+func (ec *executionContext) marshalOCompany2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompanyᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.Company) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -4040,14 +4242,14 @@ func (ec *executionContext) marshalOCompany2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgrap
 	return ret
 }
 
-func (ec *executionContext) marshalOCompany2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompany(ctx context.Context, sel ast.SelectionSet, v *model.Company) graphql.Marshaler {
+func (ec *executionContext) marshalOCompany2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐCompany(ctx context.Context, sel ast.SelectionSet, v *model1.Company) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Company(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOJob2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJobᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Job) graphql.Marshaler {
+func (ec *executionContext) marshalOJob2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJobᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.Job) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -4094,7 +4296,7 @@ func (ec *executionContext) marshalOJob2ᚕᚖgithubᚗcomᚋDaoVuDatᚋgraphql�
 	return ret
 }
 
-func (ec *executionContext) marshalOJob2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJob(ctx context.Context, sel ast.SelectionSet, v *model.Job) graphql.Marshaler {
+func (ec *executionContext) marshalOJob2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJob(ctx context.Context, sel ast.SelectionSet, v *model1.Job) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

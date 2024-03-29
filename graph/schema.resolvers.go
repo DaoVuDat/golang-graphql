@@ -7,8 +7,10 @@ package graph
 import (
 	"context"
 	"fmt"
+
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/DaoVuDat/graphql/.gen/model"
+	inputModel "github.com/DaoVuDat/graphql/graph/model"
 	"github.com/DaoVuDat/graphql/sqlStore"
 	"github.com/DaoVuDat/graphql/utils"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -27,6 +29,17 @@ func (r *jobResolver) Date(ctx context.Context, obj *model.Job) (string, error) 
 // Company is the resolver for the company field.
 func (r *jobResolver) Company(ctx context.Context, obj *model.Job) (*model.Company, error) {
 	return sqlStore.FindCompanyById(r.Db, obj.CompanyId)
+}
+
+// CreateJob is the resolver for the createJob field.
+func (r *mutationResolver) CreateJob(ctx context.Context, input inputModel.CreateJobInput) (*model.Job, error) {
+	companyId := "Gu7QW9LcnF5d" // TODO: set based on user
+	job, err := sqlStore.CreateJob(r.Db, companyId, input.Title, input.Description)
+	if err != nil {
+		return nil, err
+	}
+
+	return job, nil
 }
 
 // Jobs is the resolver for the jobs field.
@@ -79,9 +92,13 @@ func (r *Resolver) Company() CompanyResolver { return &companyResolver{r} }
 // Job returns JobResolver implementation.
 func (r *Resolver) Job() JobResolver { return &jobResolver{r} }
 
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type companyResolver struct{ *Resolver }
 type jobResolver struct{ *Resolver }
+type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

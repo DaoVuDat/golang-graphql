@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/DaoVuDat/graphql/sqlStore"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/mattn/go-sqlite3"
@@ -15,7 +16,7 @@ type LoginReq struct {
 }
 
 type Response struct {
-	Data interface{} `json:"data"`
+	Token interface{} `json:"token"`
 }
 
 const filepath = "./data/db.sqlite3"
@@ -39,9 +40,28 @@ func main() {
 			return c.String(http.StatusBadRequest, "bad request")
 		}
 
+		user, err := sqlStore.FindUserByEmail(db, loginReq.Email)
+		if err != nil {
+			return c.String(http.StatusUnauthorized, "unauthorized")
+		}
+
+		if user.Password != loginReq.Password {
+			return c.String(http.StatusUnauthorized, "unauthorized")
+		}
+
+		token, err := NewClaim(user.ID, user.Email)
+		if user.Password != loginReq.Password {
+			return c.String(http.StatusInternalServerError, "internal error")
+		}
+
+		claimToken, err := SignClaimToken(token)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "internal error claim")
+		}
+
 		// return token instead
 		return c.JSON(http.StatusOK, Response{
-			Data: "",
+			Token: string(claimToken),
 		})
 	})
 
