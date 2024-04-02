@@ -6,19 +6,18 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/DaoVuDat/graphql/.gen/model"
 	inputModel "github.com/DaoVuDat/graphql/graph/model"
-	"github.com/DaoVuDat/graphql/sqlStore"
 	"github.com/DaoVuDat/graphql/utils"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 // Jobs is the resolver for the jobs field.
 func (r *companyResolver) Jobs(ctx context.Context, obj *model.Company) ([]*model.Job, error) {
-	return sqlStore.FindJobByCompanyId(r.Db, obj.ID), nil
+	return r.Store.FindJobByCompanyId(obj.ID), nil
 }
 
 // Date is the resolver for the date field.
@@ -28,13 +27,40 @@ func (r *jobResolver) Date(ctx context.Context, obj *model.Job) (string, error) 
 
 // Company is the resolver for the company field.
 func (r *jobResolver) Company(ctx context.Context, obj *model.Job) (*model.Company, error) {
-	return sqlStore.FindCompanyById(r.Db, obj.CompanyId)
+	return r.Store.GetCompanyLoader(ctx, obj.CompanyId)
+	//return sqlStore.For(ctx).CompanyLoader.Load(ctx, obj.CompanyId)
 }
 
 // CreateJob is the resolver for the createJob field.
 func (r *mutationResolver) CreateJob(ctx context.Context, input inputModel.CreateJobInput) (*model.Job, error) {
-	companyId := "Gu7QW9LcnF5d" // TODO: set based on user
-	job, err := sqlStore.CreateJob(r.Db, companyId, input.Title, input.Description)
+	user := ctx.Value("user").(*model.User)
+
+	if user == nil {
+		return nil, errors.New("unauthorized")
+	}
+	companyId := user.CompanyId
+
+	job, err := r.Store.CreateJob(companyId, input.Title, input.Description)
+	if err != nil {
+		return nil, err
+	}
+
+	return job, nil
+}
+
+// DeleteJob is the resolver for the deleteJob field.
+func (r *mutationResolver) DeleteJob(ctx context.Context, input inputModel.DeleteJobInput) (*model.Job, error) {
+	job, err := r.Store.DeleteJob(input.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return job, nil
+}
+
+// UpdateJob is the resolver for the updateJob field.
+func (r *mutationResolver) UpdateJob(ctx context.Context, input inputModel.UpdateJobInput) (*model.Job, error) {
+	job, err := r.Store.UpdateJob(input.ID, input.Title, input.Description)
 	if err != nil {
 		return nil, err
 	}
@@ -44,19 +70,20 @@ func (r *mutationResolver) CreateJob(ctx context.Context, input inputModel.Creat
 
 // Jobs is the resolver for the jobs field.
 func (r *queryResolver) Jobs(ctx context.Context) ([]*model.Job, error) {
-	jobs := sqlStore.ListJobs(r.Db)
+	jobs := r.Store.ListJobs()
+
 	return jobs, nil
 }
 
 // Companies is the resolver for the companies field.
 func (r *queryResolver) Companies(ctx context.Context) ([]*model.Company, error) {
-	companies := sqlStore.ListCompany(r.Db)
+	companies := r.Store.ListCompany()
 	return companies, nil
 }
 
 // Job is the resolver for the job field.
 func (r *queryResolver) Job(ctx context.Context, id string) (*model.Job, error) {
-	job, err := sqlStore.FindJobById(r.Db, id)
+	job, err := r.Store.FindJobById(id)
 	if err != nil {
 		return nil, &gqlerror.Error{
 			Path:    graphql.GetPath(ctx),
@@ -66,12 +93,13 @@ func (r *queryResolver) Job(ctx context.Context, id string) (*model.Job, error) 
 			},
 		}
 	}
+
 	return job, nil
 }
 
 // Company is the resolver for the company field.
 func (r *queryResolver) Company(ctx context.Context, id string) (*model.Company, error) {
-	company, err := sqlStore.FindCompanyById(r.Db, id)
+	company, err := r.Store.FindCompanyById(id)
 
 	if err != nil {
 		return nil, &gqlerror.Error{

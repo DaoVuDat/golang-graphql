@@ -7,8 +7,18 @@ type CreateJobInput struct {
 	Description *string `json:"description,omitempty"`
 }
 
+type DeleteJobInput struct {
+	ID string `json:"id"`
+}
+
 type Mutation struct {
 }
 
 type Query struct {
+}
+
+type UpdateJobInput struct {
+	Title       *string `json:"title,omitempty"`
+	Description *string `json:"description,omitempty"`
+	ID          string  `json:"id"`
 }

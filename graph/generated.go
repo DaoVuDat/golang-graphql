@@ -67,6 +67,8 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		CreateJob func(childComplexity int, input model.CreateJobInput) int
+		DeleteJob func(childComplexity int, input model.DeleteJobInput) int
+		UpdateJob func(childComplexity int, input model.UpdateJobInput) int
 	}
 
 	Query struct {
@@ -87,6 +89,8 @@ type JobResolver interface {
 }
 type MutationResolver interface {
 	CreateJob(ctx context.Context, input model.CreateJobInput) (*model1.Job, error)
+	DeleteJob(ctx context.Context, input model.DeleteJobInput) (*model1.Job, error)
+	UpdateJob(ctx context.Context, input model.UpdateJobInput) (*model1.Job, error)
 }
 type QueryResolver interface {
 	Jobs(ctx context.Context) ([]*model1.Job, error)
@@ -189,6 +193,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateJob(childComplexity, args["input"].(model.CreateJobInput)), true
 
+	case "Mutation.deleteJob":
+		if e.complexity.Mutation.DeleteJob == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteJob_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteJob(childComplexity, args["input"].(model.DeleteJobInput)), true
+
+	case "Mutation.updateJob":
+		if e.complexity.Mutation.UpdateJob == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateJob_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateJob(childComplexity, args["input"].(model.UpdateJobInput)), true
+
 	case "Query.companies":
 		if e.complexity.Query.Companies == nil {
 			break
@@ -236,6 +264,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputCreateJobInput,
+		ec.unmarshalInputDeleteJobInput,
+		ec.unmarshalInputUpdateJobInput,
 	)
 	first := true
 
@@ -359,6 +389,36 @@ func (ec *executionContext) field_Mutation_createJob_args(ctx context.Context, r
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateJobInput2githubᚗcomᚋDaoVuDatᚋgraphqlᚋgraphᚋmodelᚐCreateJobInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteJob_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.DeleteJobInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNDeleteJobInput2githubᚗcomᚋDaoVuDatᚋgraphqlᚋgraphᚋmodelᚐDeleteJobInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateJob_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdateJobInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdateJobInput2githubᚗcomᚋDaoVuDatᚋgraphqlᚋgraphᚋmodelᚐUpdateJobInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -920,6 +980,134 @@ func (ec *executionContext) fieldContext_Mutation_createJob(ctx context.Context,
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteJob(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteJob(rctx, fc.Args["input"].(model.DeleteJobInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model1.Job)
+	fc.Result = res
+	return ec.marshalOJob2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Job_id(ctx, field)
+			case "date":
+				return ec.fieldContext_Job_date(ctx, field)
+			case "title":
+				return ec.fieldContext_Job_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Job_description(ctx, field)
+			case "company":
+				return ec.fieldContext_Job_company(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Job", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateJob(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateJob(rctx, fc.Args["input"].(model.UpdateJobInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model1.Job)
+	fc.Result = res
+	return ec.marshalOJob2ᚖgithubᚗcomᚋDaoVuDatᚋgraphqlᚋᚗgenᚋmodelᚐJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Job_id(ctx, field)
+			case "date":
+				return ec.fieldContext_Job_date(ctx, field)
+			case "title":
+				return ec.fieldContext_Job_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Job_description(ctx, field)
+			case "company":
+				return ec.fieldContext_Job_company(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Job", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3092,6 +3280,74 @@ func (ec *executionContext) unmarshalInputCreateJobInput(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDeleteJobInput(ctx context.Context, obj interface{}) (model.DeleteJobInput, error) {
+	var it model.DeleteJobInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateJobInput(ctx context.Context, obj interface{}) (model.UpdateJobInput, error) {
+	var it model.UpdateJobInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "description", "id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -3322,6 +3578,14 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createJob":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createJob(ctx, field)
+			})
+		case "deleteJob":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteJob(ctx, field)
+			})
+		case "updateJob":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateJob(ctx, field)
 			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -3832,6 +4096,11 @@ func (ec *executionContext) unmarshalNCreateJobInput2githubᚗcomᚋDaoVuDatᚋg
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNDeleteJobInput2githubᚗcomᚋDaoVuDatᚋgraphqlᚋgraphᚋmodelᚐDeleteJobInput(ctx context.Context, v interface{}) (model.DeleteJobInput, error) {
+	res, err := ec.unmarshalInputDeleteJobInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3914,6 +4183,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUpdateJobInput2githubᚗcomᚋDaoVuDatᚋgraphqlᚋgraphᚋmodelᚐUpdateJobInput(ctx context.Context, v interface{}) (model.UpdateJobInput, error) {
+	res, err := ec.unmarshalInputUpdateJobInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

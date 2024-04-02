@@ -27,3 +27,14 @@ func SignClaimToken(claim jwt.Token) ([]byte, error) {
 
 	return signedClaim, nil
 }
+
+func ParseToken(token string) (jwt.Token, error) {
+	v, err := jwk.FromRaw([]byte(secret))
+
+	parse, err := jwt.Parse([]byte(token), jwt.WithKey(jwa.HS256, v))
+	if err != nil {
+		return nil, err
+	}
+
+	return parse, err
+}

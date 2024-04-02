@@ -1,7 +1,7 @@
 package sqlStore
 
 import (
-	"database/sql"
+	"fmt"
 	"github.com/DaoVuDat/graphql/.gen/model"
 	. "github.com/DaoVuDat/graphql/.gen/table"
 	"github.com/dgryski/trifles/uuid"
@@ -10,12 +10,14 @@ import (
 	"time"
 )
 
-func ListJobs(db *sql.DB) []*model.Job {
+func (store *Store) ListJobs() []*model.Job {
 	// Query
 	queryString := SELECT(Job.AllColumns).FROM(Job)
 
 	var jobs []*model.Job
-	err := queryString.Query(db, &jobs)
+	err := queryString.Query(store.db, &jobs)
+	fmt.Println("=== ListJobs")
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -23,12 +25,14 @@ func ListJobs(db *sql.DB) []*model.Job {
 	return jobs
 }
 
-func FindJobById(db *sql.DB, id string) (*model.Job, error) {
+func (store *Store) FindJobById(id string) (*model.Job, error) {
 	// Query
 	queryString := SELECT(Job.AllColumns).FROM(Job).WHERE(Job.ID.EQ(String(id)))
 
 	var job model.Job
-	err := queryString.Query(db, &job)
+	err := queryString.Query(store.db, &job)
+	fmt.Println("=== FindJobById")
+
 	if err != nil {
 		return nil, err
 	}
@@ -36,14 +40,16 @@ func FindJobById(db *sql.DB, id string) (*model.Job, error) {
 	return &job, nil
 }
 
-func FindJobByCompanyId(db *sql.DB, companyId string) []*model.Job {
+func (store *Store) FindJobByCompanyId(companyId string) []*model.Job {
 	// Query
 	queryString := SELECT(Job.AllColumns).
 		FROM(Job).
 		WHERE(Job.CompanyId.EQ(String(companyId)))
 
 	var jobs []*model.Job
-	err := queryString.Query(db, &jobs)
+	err := queryString.Query(store.db, &jobs)
+	fmt.Println("=== FindJobByCompanyId")
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,7 +57,7 @@ func FindJobByCompanyId(db *sql.DB, companyId string) []*model.Job {
 	return jobs
 }
 
-func CreateJob(db *sql.DB, companyId, title string, description *string) (*model.Job, error) {
+func (store *Store) CreateJob(companyId, title string, description *string) (*model.Job, error) {
 	job := model.Job{
 		ID:          uuid.UUIDv4(),
 		CompanyId:   companyId,
@@ -64,11 +70,51 @@ func CreateJob(db *sql.DB, companyId, title string, description *string) (*model
 	queryString := Job.INSERT(Job.AllColumns).MODEL(job).RETURNING(Job.AllColumns)
 
 	var insertedJob model.Job
-	err := queryString.Query(db, &insertedJob)
+	err := queryString.Query(store.db, &insertedJob)
 	if err != nil {
 		return nil, err
 	}
 
 	return &insertedJob, nil
+
+}
+
+func (store *Store) DeleteJob(id string) (*model.Job, error) {
+	// Query
+	queryString := Job.DELETE().WHERE(Job.ID.EQ(String(id))).RETURNING(Job.AllColumns)
+
+	var deletedJob model.Job
+	err := queryString.Query(store.db, &deletedJob)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deletedJob, nil
+}
+
+func (store *Store) UpdateJob(id string, title, description *string) (*model.Job, error) {
+	var fieldToUpdate ColumnList
+	var modelToUpdate model.Job
+	if title != nil {
+		fieldToUpdate = append(fieldToUpdate, Job.Title)
+		modelToUpdate.Title = *title
+	}
+
+	if description != nil {
+		fieldToUpdate = append(fieldToUpdate, Job.Description)
+		modelToUpdate.Description = description
+	}
+	// Query
+	queryString := Job.UPDATE(fieldToUpdate).
+		WHERE(Job.ID.EQ(String(id))).
+		MODEL(modelToUpdate).RETURNING(Job.AllColumns)
+
+	var updatedJob model.Job
+	err := queryString.Query(store.db, &updatedJob)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedJob, nil
 
 }
